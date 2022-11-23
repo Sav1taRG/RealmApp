@@ -43,6 +43,13 @@ class TasksViewController: UITableViewController {
         section == 0 ? "CURRENT TASKS" : "COMPLETED TASKS"
     }
     
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        showAlert(with: getTask(for: indexPath)) {
+            tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+    }
+    
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let task = indexPath.section == 0 ? currentTasks[indexPath.row] : completedTasks[indexPath.row]
         
@@ -75,9 +82,12 @@ class TasksViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TasksCell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: "TasksCell",
+            for: indexPath
+        )
         var content = cell.defaultContentConfiguration()
-        let task = indexPath.section == 0 ? currentTasks[indexPath.row] : completedTasks[indexPath.row]
+        let task = getTask(for: indexPath)
         content.text = task.name
         content.secondaryText = task.note
         cell.contentConfiguration = content
@@ -94,11 +104,15 @@ extension TasksViewController {
     private func showAlert(with task: Task? = nil, completion: (() -> Void)? = nil) {
         let title = task != nil ? "Edit Task" : "New Task"
         
-        let alert = UIAlertController.createAlert(withTitle: title, andMessage: "What do you want to do?")
+        let alert = UIAlertController.createAlert(
+            withTitle: title,
+            andMessage: "What do you want to do?"
+        )
         
         alert.action(with: task) { [weak self] taskTitle, note in
-            if let _ = task, let _ = completion {
-                // TODO - edit task
+            if let task = task, let completion = completion {
+                StorageManager.shared.update(task, name: taskTitle, note: note)
+                completion()
             } else {
                 self?.save(task: taskTitle, withNote: note)
             }
@@ -109,8 +123,16 @@ extension TasksViewController {
     
     private func save(task: String, withNote note: String) {
         StorageManager.shared.save(task, withNote: note, to: taskList) { task in
-            let rowIndex = IndexPath(row: currentTasks.index(of: task) ?? 0, section: 0)
+            let rowIndex = IndexPath(
+                row: currentTasks.index(of: task) ?? 0,
+                section: 0
+            )
             tableView.insertRows(at: [rowIndex], with: .automatic)
         }
     }
+    
+    private func getTask(for indexPath: IndexPath) -> Task {
+        indexPath.section == 0 ? currentTasks[indexPath.row] : completedTasks[indexPath.row]
+    }
 }
+
