@@ -15,7 +15,7 @@ class TasksViewController: UITableViewController {
     
     private var currentTasks: Results<Task>!
     private var completedTasks: Results<Task>!
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         title = taskList.name
@@ -48,7 +48,30 @@ class TasksViewController: UITableViewController {
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") {_, _, _ in
             StorageManager.shared.delete(task)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
         }
+        
+        let editAction = UIContextualAction(style: .normal, title: "Edit") { _, _, isDone in
+            self.showAlert(with: task) {
+                tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
+            isDone(true)
+        }
+        
+        let isFirstSection = indexPath.section == 0
+        
+        let doneAction = UIContextualAction(style: .normal, title: isFirstSection ? "Done" : "Not Done") { _, _, isDone in
+            StorageManager.shared.done(task, isComplete: isFirstSection)
+            tableView.moveRow(
+                at: indexPath,
+                to: IndexPath(row: 0, section: isFirstSection ? 1 : 0)
+            )
+            isDone(true)
+        }
+        editAction.backgroundColor = .orange
+        doneAction.backgroundColor = #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
+        
+        return UISwipeActionsConfiguration(actions: [doneAction, editAction, deleteAction])
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -64,7 +87,7 @@ class TasksViewController: UITableViewController {
     @objc private func addButtonPressed() {
         showAlert()
     }
-
+    
 }
 
 extension TasksViewController {
