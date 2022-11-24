@@ -22,6 +22,7 @@ class TaskListViewController: UITableViewController {
         )
         
         navigationItem.rightBarButtonItem = addButton
+        // Как сделать, чтобы при тапе по EDIT вызывались те же Actions что и при trailingSwipeActionsConfigurationForRowAt?
         navigationItem.leftBarButtonItem = editButtonItem
         createTempData()
         taskLists = StorageManager.shared.realm.objects(TaskList.self)
