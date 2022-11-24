@@ -10,7 +10,7 @@ import UIKit
 import RealmSwift
 
 class TaskListViewController: UITableViewController {
-
+    
     private var taskLists: Results<TaskList>!
     
     override func viewDidLoad() {
@@ -32,6 +32,11 @@ class TaskListViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    override func setEditing(_ editing: Bool, animated: Bool) {
+        super.setEditing(editing, animated: animated)
+        tableView.setEditing(editing, animated: animated)
+        
+    }
     // MARK: - Table view data source
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         taskLists.count
@@ -41,8 +46,15 @@ class TaskListViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "TaskListCell", for: indexPath)
         var content = cell.defaultContentConfiguration()
         let taskList = taskLists[indexPath.row]
+        var inCompletedTasks: Int {
+            taskList.tasks.filter{ !$0.isComplete }.count
+        }
+        if inCompletedTasks == 0 {
+            content.secondaryText = "✅"
+        } else {
+            content.secondaryText = "\(inCompletedTasks)"
+        }
         content.text = taskList.name
-        content.secondaryText = "\(taskList.tasks.count)"
         cell.contentConfiguration = content
         return cell
     }
@@ -82,8 +94,16 @@ class TaskListViewController: UITableViewController {
         let taskList = taskLists[indexPath.row]
         tasksVC.taskList = taskList
     }
-
+    
     @IBAction func sortingList(_ sender: UISegmentedControl) {
+        if sender.selectedSegmentIndex == 0 {
+            taskLists = StorageManager.shared.realm.objects(TaskList.self)
+                .sorted(byKeyPath: "date")
+        } else {
+            taskLists = StorageManager.shared.realm.objects(TaskList.self)
+                .sorted(byKeyPath: "name")
+        }
+        tableView.reloadData()
     }
     
     @objc private func addButtonPressed() {
